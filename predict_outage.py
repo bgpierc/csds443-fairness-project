@@ -1,5 +1,8 @@
 import pandas as pd
+import numpy as np
 from datetime import date, timedelta
+from sklearn.linear_model import LogisticRegression
+from sklearn.model_selection import train_test_split
 
 def outage_history(outages, fips_code, date):
     '''
@@ -23,7 +26,35 @@ def outage_history(outages, fips_code, date):
 
     return outage_history[:5], outage_history[5]
 
+def generate_data(outages, start_date=date(2024, 1, 6), end_date=date(2024, 12, 31)):
+    '''
+    Inputs:
+    outages - dataframe containing outage and demographic information
+    start_date - earliest date to predict outage for (defaults to earliest date with full history)
+    end_date - latest date to predict outage for (defaults to latest date with full history)
+
+    Outputs:
+    X - history of a random date for every county
+    y - outage result of a random date for every county
+    '''
+    X = []
+    y = []
+    fips_codes = np.unique(outages["fips_code"])
+
+    for code in fips_codes:
+        target_date = start_date + timedelta(days=np.random.randint((end_date - start_date).days))
+        data = outage_history(outages, code, target_date)
+        X.append(data[0])
+        y.append(data[1])
+
+    return X, y
+
 if __name__=="__main__":
     outages = pd.read_csv("./data/daily_outages_data.csv")
 
-    print(outage_history(outages, 1001, date(2024, 1, 5)))
+    X, y = generate_data(outages)
+    X_train, X_test, y_train, y_test = train_test_split(X, y, test_size=0.2)
+    model = LogisticRegression(max_iter=200)
+    model.fit(X_train, y_train)
+
+    print("Accuracy:", model.score(X_test, y_test))
