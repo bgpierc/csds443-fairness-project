@@ -16,7 +16,8 @@ def outage_history(outages, fips_code, date):
     result - target date outage outcome (1 for outage, 0 for no outage)
     '''
     county_outages = outages[outages["fips_code"].isin([fips_code])]["date"].tolist()
-    outage_history = []
+    # outage_history = []
+    outage_history = [outages.loc[outages["fips_code"] == fips_code, "poverty_rate_2023"].iloc[0]]
 
     for i in range(0, 6):
         if (date - timedelta(days=i)).strftime("%Y-%m-%d") in county_outages:
@@ -42,10 +43,11 @@ def generate_data(outages, start_date=date(2024, 1, 6), end_date=date(2024, 12, 
     fips_codes = np.unique(outages["fips_code"])
 
     for code in fips_codes:
-        target_date = start_date + timedelta(days=np.random.randint((end_date - start_date).days))
-        data = outage_history(outages, code, target_date)
-        X.append(data[0])
-        y.append(data[1])
+        for _ in range(5):
+            target_date = start_date + timedelta(days=np.random.randint((end_date - start_date).days))
+            data = outage_history(outages, code, target_date)
+            X.append(data[0])
+            y.append(data[1])
 
     return X, y
 
@@ -53,7 +55,7 @@ if __name__=="__main__":
     outages = pd.read_csv("./data/daily_outages_data.csv")
 
     X, y = generate_data(outages)
-    X_train, X_test, y_train, y_test = train_test_split(X, y, test_size=0.2)
+    X_train, X_test, y_train, y_test = train_test_split(X, y, test_size=0.2, random_state=1)
     model = LogisticRegression(max_iter=200)
     model.fit(X_train, y_train)
 
